@@ -1,6 +1,6 @@
 """LLM Integration Service"""
 
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 import os
 import re
 import requests
@@ -16,13 +16,29 @@ class LLMService:
         api_key: str = None,
         model_name: str = "gpt-4",
         provider: str = "auto",
+        huggingface_api_key: str = None,
+        huggingface_model: str = "openai/gpt-oss-20b:cheapest",
+        huggingface_base_url: str = "https://router.huggingface.co/v1/chat/completions",
         ollama_base_url: str = "http://127.0.0.1:11434",
         ollama_model: str = "qwen2.5:1.5b-instruct",
         ollama_fallback_models: Optional[List[str]] = None,
     ):
         resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
+        resolved_hf_api_key = huggingface_api_key or os.getenv("HUGGINGFACE_API_KEY")
         self.client = None
         self.provider = provider
+        self.huggingface_api_key = resolved_hf_api_key
+        self.huggingface_model = huggingface_model or os.getenv(
+            "HUGGINGFACE_MODEL",
+            "openai/gpt-oss-20b:cheapest",
+        )
+        self.huggingface_base_url = (
+            huggingface_base_url
+            or os.getenv(
+                "HUGGINGFACE_BASE_URL",
+                "https://router.huggingface.co/v1/chat/completions",
+            )
+        )
         self.ollama_base_url = ollama_base_url.rstrip("/")
         self.ollama_model = ollama_model
         self.ollama_fallback_models = self._build_ollama_candidates(
@@ -145,6 +161,22 @@ If the topic is outside finance, tax, accounting, or compliance, say so briefly.
         })
         return messages
 
+    def _extract_message_text(self, content: Any) -> str:
+        """Normalize provider response content into plain text."""
+        if isinstance(content, str):
+            return content.strip()
+
+        if isinstance(content, list):
+            parts = []
+            for item in content:
+                if isinstance(item, dict):
+                    text = item.get("text")
+                    if text:
+                        parts.append(str(text))
+            return "\n".join(parts).strip()
+
+        return str(content or "").strip()
+
     def _ollama_chat(
         self,
         model: str,
@@ -196,6 +228,60 @@ If the topic is outside finance, tax, accounting, or compliance, say so briefly.
             if error and "requires more system memory" in error.lower():
                 continue
         return None
+
+    def _huggingface_chat(
+        self,
+        query: str,
+        context: str = "",
+        system_prompt: str = None,
+    ) -> Tuple[Optional[dict], Optional[str]]:
+        """Call Hugging Face Inference Providers via the OpenAI-compatible chat endpoint."""
+        if not self.huggingface_api_key:
+            return None, "Hugging Face API key is not configured"
+
+        try:
+            response = requests.post(
+                self.huggingface_base_url,
+                headers={
+                    "Authorization": f"Bearer {self.huggingface_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": self.huggingface_model,
+                    "messages": self._build_messages(query, context, system_prompt),
+                    "temperature": self.temperature,
+                    "max_tokens": 2048,
+                    "stream": False,
+                },
+                timeout=120,
+            )
+            response.raise_for_status()
+            data = response.json()
+            choices = data.get("choices") or []
+            message = choices[0].get("message", {}) if choices else {}
+            content = self._extract_message_text(message.get("content"))
+            if not content:
+                return None, "Hugging Face returned an empty response"
+
+            return {
+                "response": content,
+                "confidence": 0.84 if context else 0.66,
+                "sources_used": bool(context),
+                "model": data.get("model") or f"{self.huggingface_model} (Hugging Face)",
+                "finish_reason": choices[0].get("finish_reason") if choices else None,
+            }, None
+        except requests.HTTPError as exc:
+            details = ""
+            try:
+                details = exc.response.text.strip()
+            except Exception:
+                details = ""
+            message = f"Hugging Face request failed with status {exc.response.status_code}"
+            if details:
+                message = f"{message}: {details}"
+            return None, message
+        except Exception as exc:
+            return None, str(exc)
 
     def _build_grounded_response(self, query: str, context: str = "") -> dict:
         """Generate a strong local response without depending on external LLMs."""
@@ -259,6 +345,17 @@ If the topic is outside finance, tax, accounting, or compliance, say so briefly.
             if ollama_result is not None:
                 return ollama_result
 
+        if self.provider in ["auto", "huggingface"]:
+            huggingface_result, huggingface_error = self._huggingface_chat(
+                query,
+                context,
+                system_prompt,
+            )
+            if huggingface_result is not None:
+                return huggingface_result
+            if huggingface_error:
+                self.last_ollama_error = huggingface_error
+
         if self.client is None:
             fallback = self._build_grounded_response(query, context)
             if self.last_ollama_error:
@@ -316,6 +413,9 @@ def init_llm_service(
     api_key: str = None,
     model_name: str = "gpt-4",
     provider: str = "auto",
+    huggingface_api_key: str = None,
+    huggingface_model: str = "openai/gpt-oss-20b:cheapest",
+    huggingface_base_url: str = "https://router.huggingface.co/v1/chat/completions",
     ollama_base_url: str = "http://127.0.0.1:11434",
     ollama_model: str = "qwen2.5:1.5b-instruct",
     ollama_fallback_models: Optional[List[str]] = None,
@@ -326,6 +426,9 @@ def init_llm_service(
         api_key=api_key,
         model_name=model_name,
         provider=provider,
+        huggingface_api_key=huggingface_api_key,
+        huggingface_model=huggingface_model,
+        huggingface_base_url=huggingface_base_url,
         ollama_base_url=ollama_base_url,
         ollama_model=ollama_model,
         ollama_fallback_models=ollama_fallback_models,
@@ -342,6 +445,9 @@ def get_llm_service() -> LLMService:
             api_key=settings.openai_api_key,
             model_name=settings.model_name,
             provider=settings.llm_provider,
+            huggingface_api_key=settings.huggingface_api_key,
+            huggingface_model=settings.huggingface_model,
+            huggingface_base_url=settings.huggingface_base_url,
             ollama_base_url=settings.ollama_base_url,
             ollama_model=settings.ollama_model,
             ollama_fallback_models=[

@@ -5,7 +5,7 @@ This repo is prepared for a single free Render web service that:
 - builds the React frontend
 - serves it from the FastAPI backend
 - keeps uploads and embeddings in temporary storage
-- uses a hosted Hugging Face model in production
+- uses a hosted Hugging Face Inference Providers chat model in production
 
 ## Free Tier Tradeoff
 
@@ -40,6 +40,10 @@ The local Ollama setup works on this machine only with smaller models. On Render
 5. In the service environment variables, set `HUGGINGFACE_API_KEY`.
 6. Deploy.
 
+## Token Scope
+
+Use a Hugging Face fine-grained token with permission to make inference calls for the selected model. If the deployed app shows authentication or permission errors, rotate the token and make sure inference access is enabled for the model you chose.
+
 ## Important Settings
 
 - Health check path: `/api/health`
@@ -47,6 +51,7 @@ The local Ollama setup works on this machine only with smaller models. On Render
 - API base path: `/api`
 - Upload storage: `/tmp/rajeshgpt/uploads`
 - Embeddings storage: `/tmp/rajeshgpt/embeddings`
+- Default chat model: `openai/gpt-oss-20b:cheapest`
 
 ## Expected Result
 

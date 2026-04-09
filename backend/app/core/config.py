@@ -25,8 +25,14 @@ class Settings(BaseSettings):
     
     # LLM Configuration
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    model_name: str = "gpt-4"
+    model_name: str = os.getenv("OPENAI_MODEL", "gpt-4")
     llm_provider: str = os.getenv("LLM_PROVIDER", "auto")
+    huggingface_api_key: str = os.getenv("HUGGINGFACE_API_KEY", "")
+    huggingface_model: str = os.getenv("HUGGINGFACE_MODEL", "openai/gpt-oss-20b:cheapest")
+    huggingface_base_url: str = os.getenv(
+        "HUGGINGFACE_BASE_URL",
+        "https://router.huggingface.co/v1/chat/completions",
+    )
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
     ollama_model: str = os.getenv("OLLAMA_MODEL", "qwen2.5:1.5b-instruct")
     ollama_fallback_models: str = os.getenv(
