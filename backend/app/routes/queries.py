@@ -35,11 +35,21 @@ async def process_query(request: QueryRequest):
                 "validation": validation
             }
         
+        client_documents = [
+            document.model_dump() if hasattr(document, "model_dump") else document
+            for document in (request.client_documents or [])
+        ]
         available_documents = rag_service.list_documents()
         requested_document_ids = request.document_ids or []
-        allowed_document_ids = requested_document_ids or [doc["doc_id"] for doc in available_documents]
 
-        if available_documents:
+        if client_documents:
+            rag_context, source_chunks = rag_service.build_rag_context_from_documents(
+                request.query,
+                client_documents,
+                top_k=5,
+            )
+        elif available_documents:
+            allowed_document_ids = requested_document_ids or [doc["doc_id"] for doc in available_documents]
             rag_context, source_chunks = rag_service.build_rag_context(
                 request.query,
                 top_k=5,
@@ -74,7 +84,7 @@ async def process_query(request: QueryRequest):
                 "text": chunk["text"][:200] + "..." if len(chunk["text"]) > 200 else chunk["text"]
             })
 
-        if requested_document_ids and not source_chunks:
+        if (requested_document_ids or client_documents) and not source_chunks:
             llm_result["response"] += (
                 "\n\nNo highly relevant passage was found in the selected uploaded document set. "
                 "Try selecting a different PDF or ask a narrower question tied to the uploaded material."

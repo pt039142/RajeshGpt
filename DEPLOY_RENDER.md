@@ -12,10 +12,11 @@ This repo is prepared for a single free Render web service that:
 The `render.yaml` is now configured for Render's `free` plan. That means:
 
 - the app deploys without a paid persistent disk
-- uploaded PDFs and in-memory document state are temporary
-- files can disappear after a restart, redeploy, or cold start
+- server-local files can disappear after a restart, redeploy, or cold start
+- browser-saved documents and chat history persist in the user's browser on the same device
+- uploaded PDFs are re-used from browser storage during future queries, so the app no longer depends on server-local PDF persistence for normal single-user use
 
-If you want document persistence later, switch the service to a paid plan and mount a disk again.
+If you want team-wide shared persistence later, switch to a paid plan with a disk or move files to external object storage/database storage.
 
 ## Why Hugging Face instead of Ollama on Render
 
@@ -60,9 +61,11 @@ After deploy:
 - `/` serves the React UI
 - `/api/*` serves the backend endpoints
 - direct browser refreshes on frontend routes keep working
-- uploaded files work during the current container lifetime
+- uploaded files and chat history stay available in the same browser across free-tier restarts
+- document-backed queries work by sending browser-cached document chunks back to the API
 
 ## Notes
 
 - Free Render services can sleep after inactivity, so the first request may be slow.
-- If you need durable uploads, use a paid plan with a persistent disk or move files to external object storage.
+- Browser persistence is per browser/profile, not shared across devices.
+- If you need durable shared uploads, use a paid plan with a persistent disk or move files to external object storage.

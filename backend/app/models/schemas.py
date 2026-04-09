@@ -53,6 +53,8 @@ class Document(DocumentBase):
     file_path: str
     file_size: int
     pages: int
+    chunk_count: int = 0
+    chunks: List[str] = []
     uploaded_at: datetime
     
     class Config:
@@ -67,10 +69,19 @@ class DocumentResponse(BaseModel):
 
 
 # Query Schemas
+class ClientDocument(BaseModel):
+    """Client-persisted document payload sent with a query."""
+    doc_id: str
+    name: str
+    chunks: List[str] = []
+    pages: int = 0
+
+
 class QueryRequest(BaseModel):
     """Income tax query request"""
     query: str = Field(..., min_length=5, max_length=1000)
     document_ids: Optional[List[Union[int, str]]] = []
+    client_documents: Optional[List[ClientDocument]] = []
     conversation_id: Optional[str] = None
 
 

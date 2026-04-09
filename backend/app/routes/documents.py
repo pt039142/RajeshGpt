@@ -68,6 +68,8 @@ async def upload_document(file: UploadFile = File(...)):
                 "file_path": save_path,
                 "file_size": file_size,
                 "pages": doc_data["pages"],
+                "chunk_count": len(chunks),
+                "chunks": chunks,
                 "uploaded_at": datetime.utcnow()
             }
         }
