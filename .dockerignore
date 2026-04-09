@@ -1,0 +1,17 @@
+.venv
+node_modules
+frontend/node_modules
+frontend/dist
+backend/__pycache__
+backend/app/__pycache__
+backend/uploads
+backend/embeddings
+backend/storage
+streamlit_app
+*.pyc
+*.pyo
+*.pyd
+*.log
+.env
+.env.*
+.git
