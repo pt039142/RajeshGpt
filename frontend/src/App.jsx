@@ -247,7 +247,6 @@ export default function App() {
         id: crypto.randomUUID(),
         role: "assistant",
         content: normalizeText(answer.response),
-        model: answer.model || "Unknown model",
         confidence: answer.confidence_score ?? validation?.confidence ?? 0,
         scope: answer.scope ?? validation?.scope ?? "unknown",
         hasRisk: Boolean(answer.has_hallucination_risk),
@@ -288,9 +287,7 @@ export default function App() {
         <div className="brand-panel">
           <div className="brand-kicker">Tax Intelligence Workspace</div>
           <h1>RajeshGPT</h1>
-          <p>
-            ChatGPT-style UI for income tax officers, directors, CAs, and finance teams.
-          </p>
+          <p>Private tax and finance assistance for document-backed work.</p>
         </div>
 
         <button
@@ -417,9 +414,8 @@ export default function App() {
                 <div className="empty-copy">
                   <h3>Start with a tax or finance prompt</h3>
                   <p>
-                    This interface is optimized for tax directors, officers, chartered
-                    accountants, and finance teams who want dependable, professional output.
-                    You can ask general finance and accounting questions even without uploading a PDF.
+                    You can ask general finance and accounting questions even without uploading
+                    a PDF, and use uploaded documents when you want grounded answers.
                   </p>
                 </div>
                 <div className="sample-grid">
@@ -460,10 +456,6 @@ export default function App() {
                         <div>
                           <span>Reliability</span>
                           <strong>{message.hasRisk ? "Needs review" : "Ready to use"}</strong>
-                        </div>
-                        <div>
-                          <span>Model</span>
-                          <strong>{message.model || "Unknown"}</strong>
                         </div>
                       </div>
 

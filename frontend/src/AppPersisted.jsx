@@ -337,7 +337,6 @@ export default function AppPersisted() {
         id: crypto.randomUUID(),
         role: "assistant",
         content: normalizeText(answer.response),
-        model: answer.model || "Unknown model",
         confidence: answer.confidence_score ?? validation?.confidence ?? 0,
         scope: answer.scope ?? validation?.scope ?? "unknown",
         hasRisk: Boolean(answer.has_hallucination_risk),
@@ -378,9 +377,7 @@ export default function AppPersisted() {
         <div className="brand-panel">
           <div className="brand-kicker">Tax Intelligence Workspace</div>
           <h1>RajeshGPT</h1>
-          <p>
-            ChatGPT-style UI for income tax officers, directors, CAs, and finance teams.
-          </p>
+          <p>Private tax and finance assistance for document-backed work.</p>
         </div>
 
         <button
@@ -508,9 +505,8 @@ export default function AppPersisted() {
                 <div className="empty-copy">
                   <h3>Start with a tax or finance prompt</h3>
                   <p>
-                    This interface is optimized for tax directors, officers, chartered
-                    accountants, and finance teams who want dependable, professional output.
-                    Uploaded PDFs stay saved in this browser even if the free Render backend sleeps.
+                    Uploaded PDFs stay saved in this browser even if the free Render backend
+                    sleeps, so you can continue asking document-backed questions on the same device.
                   </p>
                 </div>
                 <div className="sample-grid">
@@ -551,10 +547,6 @@ export default function AppPersisted() {
                         <div>
                           <span>Reliability</span>
                           <strong>{message.hasRisk ? "Needs review" : "Ready to use"}</strong>
-                        </div>
-                        <div>
-                          <span>Model</span>
-                          <strong>{message.model || "Unknown"}</strong>
                         </div>
                       </div>
 
